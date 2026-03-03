@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Hub</title>
+
+  <!-- Google Fonts: Poppins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* =====================================================
+       CSS VARIABLES — Soft Organic Modern Palette
+    ===================================================== */
+    :root {
+      --bg:          #FFF6EF;
+      --bg2:         #FDF1E7;
+      --surface:     #FFFFFF;
+      --peach:       #F6A57A;
+      --peach2:      #FF9F7A;
+      --orange:      #F4B183;
+      --peach-light: #FDE8D8;
+      --text:        #333333;
+      --text2:       #777777;
+      --text3:       #AAAAAA;
+      --danger:      #E07070;
+      --danger-bg:   #FFF0F0;
+      --success:     #6DBF8A;
+      --success-bg:  #F0FFF5;
+      --r-card:      24px;
+      --r-btn:       999px;
+      --r-input:     14px;
+      --shadow-card: 0 15px 40px rgba(0,0,0,0.05);
+      --shadow-btn:  0 6px 20px rgba(246,165,122,0.35);
+      --shadow-sm:   0 4px 16px rgba(0,0,0,0.06);
+
+      /* View nav height — used for iframe calc */
+      --viewnav-h: 62px;
+    }
+
+    /* =====================================================
+       RESET & BASE
+    ===================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { height: 100%; }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.6;
+      overflow-x: hidden;
+      /* NO overflow:hidden here — that was clipping admin/home page content */
+      min-height: 100%;
+    }
+
+    /* =====================================================
+       ORGANIC BLOB BACKGROUNDS
+    ===================================================== */
+    .blob-tr {
+      position: fixed; top: -140px; right: -160px;
+      width: 520px; height: 520px;
+      background: radial-gradient(circle, #FFD5BC 0%, transparent 70%);
+      border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%;
+      opacity: 0.55; pointer-events: none; z-index: 0;
+      animation: blobDrift 12s ease-in-out infinite alternate;
+    }
+    .blob-bl {
+      position: fixed; bottom: -120px; left: -100px;
+      width: 360px; height: 360px;
+      background: radial-gradient(circle, #FDDCC8 0%, transparent 68%);
+      border-radius: 45% 55% 40% 60% / 55% 45% 60% 40%;
+      opacity: 0.45; pointer-events: none; z-index: 0;
+      animation: blobDrift 16s ease-in-out infinite alternate-reverse;
+    }
+    @keyframes blobDrift {
+      from { transform: scale(1)   rotate(0deg); }
+      to   { transform: scale(1.1) rotate(8deg); }
+    }
+
+    /* =====================================================
+       PAGE ROUTING
+    ===================================================== */
+    /* Hidden by default */
+    .page { display: none; }
+
+    /* All active pages lay out as a flex column */
+    .page.active {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      animation: fadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /*
+      VIEW PAGE — uses position:fixed so it covers the full viewport
+      like an overlay. This is the most reliable way to make the
+      Power BI iframe truly fullscreen without affecting body scroll.
+    */
+    #page-view.active {
+      position: fixed;
+      inset: 0;              /* top:0 right:0 bottom:0 left:0 */
+      z-index: 500;
+      min-height: unset;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+
+    /* =====================================================
+       TOP NAVIGATION
+    ===================================================== */
+    .topnav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      height: 70px;
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(246,165,122,0.12);
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      flex-shrink: 0; /* never compress nav */
+    }
+
+    .brand {
+      display: flex; align-items: center; gap: 12px;
+      text-decoration: none; color: var(--text);
+    }
+    .brand-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--peach), var(--peach2));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 14px rgba(246,165,122,0.4);
+    }
+    .brand-icon svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .brand-name { font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; }
+    .topnav-right { display: flex; gap: 12px; align-items: center; }
+
+    /* =====================================================
+       BUTTONS
+    ===================================================== */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 24px;
+      border: none; border-radius: var(--r-btn);
+      font-size: 0.875rem; font-family: 'Poppins', sans-serif; font-weight: 600;
+      cursor: pointer; transition: all 0.22s ease;
+      text-decoration: none; white-space: nowrap; letter-spacing: 0.01em;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--peach), var(--peach2));
+      color: #fff; box-shadow: 0 4px 16px rgba(246,165,122,0.3);
+    }
+    .btn-primary:hover  { transform: translateY(-2px); box-shadow: var(--shadow-btn); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-ghost { background: var(--surface); color: var(--text2); box-shadow: var(--shadow-sm); }
+    .btn-ghost:hover { background: var(--peach-light); color: var(--peach); transform: translateY(-1px); }
+
+    /* Edit button — soft blue tint */
+    .btn-edit { background: #EEF3FF; color: #5B7FE8; }
+    .btn-edit:hover { background: #dde6ff; transform: translateY(-1px); }
+
+    .btn-danger { background: var(--danger-bg); color: var(--danger); }
+    .btn-danger:hover { background: #fde0e0; transform: translateY(-1px); }
+
+    .btn-sm { padding: 8px 18px; font-size: 0.8rem; }
+
+    /* =====================================================
+       HOME PAGE — HERO
+    ===================================================== */
+    .home-hero {
+      padding: 60px 40px 28px;
+      max-width: 1200px; margin: 0 auto; width: 100%;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--peach-light); color: var(--peach2);
+      font-size: 0.75rem; font-weight: 600;
+      padding: 5px 14px; border-radius: var(--r-btn);
+      margin-bottom: 18px; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .home-hero h1 {
+      font-size: clamp(2rem, 4.5vw, 3rem); font-weight: 700;
+      line-height: 1.18; letter-spacing: -0.03em;
+    }
+    .home-hero h1 .accent-word {
+      background: linear-gradient(90deg, var(--peach), var(--peach2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .home-hero p { margin-top: 12px; color: var(--text2); font-size: 1rem; max-width: 480px; }
+
+    /* =====================================================
+       STATS BAR
+    ===================================================== */
+    .stats-bar {
+      display: flex; gap: 16px;
+      padding: 0 40px 28px;
+      max-width: 1200px; margin: 0 auto; width: 100%;
+    }
+    .stat-pill {
+      background: var(--surface); border-radius: 18px;
+      padding: 14px 24px; box-shadow: var(--shadow-card);
+      display: flex; align-items: center; gap: 14px;
+    }
+    .stat-pill-icon {
+      width: 40px; height: 40px; background: var(--peach-light);
+      border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    }
+    .stat-pill-icon svg { width: 18px; height: 18px; stroke: var(--peach); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .stat-pill .num  { font-size: 1.5rem; font-weight: 700; color: var(--text); line-height: 1; }
+    .stat-pill .lbl  { font-size: 0.72rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500; }
+
+    /* =====================================================
+       SECTION
+    ===================================================== */
+    .section { padding: 0 40px 60px; max-width: 1200px; margin: 0 auto; width: 100%; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+    .section-label {
+      font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text3);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::before {
+      content: ''; display: inline-block; width: 18px; height: 3px;
+      background: linear-gradient(90deg, var(--peach), var(--orange)); border-radius: 99px;
+    }
+
+    /* =====================================================
+       EMPTY STATE
+    ===================================================== */
+    .empty-state {
+      text-align: center; padding: 80px 20px;
+      background: var(--surface); border-radius: var(--r-card); box-shadow: var(--shadow-card);
+    }
+    .empty-icon-wrap {
+      width: 80px; height: 80px; background: var(--peach-light); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 22px;
+    }
+    .empty-icon-wrap svg { width: 36px; height: 36px; stroke: var(--peach); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .empty-state h3 { font-size: 1.15rem; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+    .empty-state p  { font-size: 0.875rem; color: var(--text2); }
+
+    /* =====================================================
+       DASHBOARD CARDS GRID
+    ===================================================== */
+    #dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 24px;
+    }
+    .dashboard-card {
+      background: var(--surface); border-radius: var(--r-card);
+      padding: 28px 28px 24px; box-shadow: var(--shadow-card);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      position: relative; overflow: hidden;
+    }
+    .dashboard-card::after {
+      content: ''; position: absolute; top: -40px; right: -40px;
+      width: 120px; height: 120px;
+      background: radial-gradient(circle, var(--peach-light) 0%, transparent 70%);
+      border-radius: 50%; transition: transform 0.4s ease;
+    }
+    .dashboard-card:hover { transform: translateY(-5px); box-shadow: 0 24px 52px rgba(0,0,0,0.09); }
+    .dashboard-card:hover::after { transform: scale(1.4); }
+
+    .card-icon {
+      width: 50px; height: 50px;
+      background: linear-gradient(135deg, var(--peach-light), #fde8d0);
+      border-radius: 16px; display: flex; align-items: center; justify-content: center;
+      margin-bottom: 18px;
+    }
+    .card-icon svg { width: 24px; height: 24px; stroke: var(--peach2); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .card-name { font-size: 1.05rem; font-weight: 600; color: var(--text); margin-bottom: 5px; line-height: 1.3; }
+    .card-meta { font-size: 0.78rem; color: var(--text3); margin-bottom: 24px; }
+    .card-footer { display: flex; justify-content: flex-start; }
+
+    /* =====================================================
+       DASHBOARD VIEW PAGE — Power BI full-size iframe
+
+       #page-view is position:fixed (set in page routing above),
+       so it always covers 100vw × 100vh.
+       Layout: nav (fixed height) + iframe-wrapper (fills rest).
+    ===================================================== */
+    #page-view {
+      background: #fff;
+    }
+
+    .view-topnav {
+      display: flex; align-items: center; gap: 16px;
+      padding: 0 32px;
+      height: var(--viewnav-h);
+      flex-shrink: 0; /* nav never compresses */
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(246,165,122,0.18);
+      z-index: 200;
+    }
+    .view-title {
+      font-size: 0.92rem; font-weight: 600; color: var(--text);
+      flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .view-divider { width: 1px; height: 24px; background: rgba(246,165,122,0.25); flex-shrink: 0; }
+
+    /* Wrapper grows to fill all remaining space after the nav */
+    .iframe-wrapper {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #f4f4f4;
+    }
+
+    /* Iframe is positioned absolutely inside wrapper — fills 100% × 100% */
+    #dashboard-iframe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      /* Power BI needs these explicitly */
+      background: #ffffff;
+    }
+
+    /* =====================================================
+       ADMIN PAGE
+    ===================================================== */
+    .admin-container { max-width: 820px; margin: 0 auto; padding: 52px 40px 80px; width: 100%; }
+    .admin-header { margin-bottom: 40px; }
+    .admin-header h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; }
+    .admin-header p { color: var(--text2); font-size: 0.9rem; margin-top: 6px; }
+
+    /* =====================================================
+       FORM CARDS
+    ===================================================== */
+    .form-card {
+      background: var(--surface); border-radius: var(--r-card);
+      padding: 36px; box-shadow: var(--shadow-card); margin-bottom: 28px;
+      position: relative; overflow: hidden;
+    }
+    .form-card::before {
+      content: ''; position: absolute; top: -50px; right: -50px;
+      width: 180px; height: 180px;
+      background: radial-gradient(circle, var(--peach-light) 0%, transparent 65%);
+      border-radius: 50%; pointer-events: none;
+    }
+    .form-card-title {
+      font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text3);
+      margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid #f5e8de;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .form-card-title::before {
+      content: ''; display: inline-block; width: 14px; height: 3px;
+      background: linear-gradient(90deg, var(--peach), var(--orange)); border-radius: 99px;
+    }
+
+    /* Edit mode — tinted card header */
+    .form-card.edit-mode { border-top: 3px solid #5B7FE8; }
+    .form-card.edit-mode .form-card-title { color: #5B7FE8; }
+    .form-card.edit-mode .form-card-title::before { background: linear-gradient(90deg, #5B7FE8, #8BA7F8); }
+
+    .edit-mode-badge {
+      display: none;
+      align-items: center; gap: 7px;
+      background: #EEF3FF; color: #5B7FE8;
+      font-size: 0.75rem; font-weight: 600;
+      padding: 4px 12px; border-radius: var(--r-btn);
+      margin-left: auto;
+    }
+    .form-card.edit-mode .edit-mode-badge { display: inline-flex; }
+
+    /* =====================================================
+       FORM INPUTS
+    ===================================================== */
+    .form-group { margin-bottom: 22px; }
+    .form-group label {
+      display: block; font-size: 0.78rem; font-weight: 600;
+      color: var(--text2); margin-bottom: 8px; letter-spacing: 0.02em;
+    }
+    .form-group input,
+    .form-group textarea {
+      width: 100%; background: var(--bg2);
+      border: 2px solid transparent; border-radius: var(--r-input);
+      padding: 13px 18px; color: var(--text);
+      font-family: 'Poppins', sans-serif; font-size: 0.875rem;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      outline: none; resize: vertical;
+    }
+    .form-group input::placeholder,
+    .form-group textarea::placeholder { color: var(--text3); }
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: var(--orange); background: #fff;
+      box-shadow: 0 0 0 4px rgba(244,177,131,0.18);
+    }
+    .form-group textarea { min-height: 110px; }
+    .form-hint { font-size: 0.74rem; color: var(--text3); margin-top: 7px; line-height: 1.5; }
+
+    .form-actions { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+
+    /* =====================================================
+       ADMIN LIST ITEMS
+    ===================================================== */
+    .admin-list { display: flex; flex-direction: column; gap: 12px; }
+    .admin-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg2); border-radius: 16px; padding: 16px 20px;
+      gap: 16px; transition: background 0.2s;
+    }
+    .admin-item:hover { background: var(--peach-light); }
+
+    .admin-item-icon {
+      width: 36px; height: 36px; background: var(--surface);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; box-shadow: var(--shadow-sm);
+    }
+    .admin-item-icon svg { width: 16px; height: 16px; stroke: var(--peach); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .admin-item-info { flex: 1; min-width: 0; }
+    .admin-item-name { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+    .admin-item-url { font-size: 0.73rem; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: monospace; margin-top: 3px; }
+    .admin-item-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+    /* =====================================================
+       PASSWORD MODAL
+    ===================================================== */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(250, 235, 225, 0.55);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 20px;
+    }
+    .modal {
+      background: var(--surface); border-radius: 28px; padding: 44px 40px;
+      width: 100%; max-width: 420px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.12);
+      animation: modalIn 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+      position: relative; overflow: hidden;
+    }
+    .modal::before {
+      content: ''; position: absolute; top: -60px; right: -60px;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, var(--peach-light) 0%, transparent 65%);
+      border-radius: 50%; pointer-events: none;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.92) translateY(14px); }
+      to   { opacity: 1; transform: scale(1)    translateY(0);    }
+    }
+    .modal-icon {
+      width: 56px; height: 56px; background: var(--peach-light);
+      border-radius: 18px; display: flex; align-items: center; justify-content: center; margin-bottom: 22px;
+    }
+    .modal-icon svg { width: 26px; height: 26px; stroke: var(--peach2); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .modal h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 6px; color: var(--text); letter-spacing: -0.01em; }
+    .modal > p { font-size: 0.875rem; color: var(--text2); margin-bottom: 26px; }
+    .modal .form-group { margin-bottom: 14px; }
+    .modal-error {
+      color: var(--danger); font-size: 0.8rem; margin-top: 8px; font-weight: 500;
+      display: none; background: var(--danger-bg); padding: 8px 14px; border-radius: 10px;
+    }
+    .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+
+    /* =====================================================
+       TOAST NOTIFICATION
+    ===================================================== */
+    #toast {
+      position: fixed; bottom: 32px; right: 32px;
+      background: var(--surface); border-radius: 16px; padding: 14px 22px;
+      font-size: 0.875rem; font-weight: 500;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+      z-index: 9998;
+      transform: translateY(90px) scale(0.95); opacity: 0;
+      transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+      display: flex; align-items: center; gap: 10px;
+      max-width: 320px; color: var(--text);
+    }
+    #toast.show    { transform: translateY(0) scale(1); opacity: 1; }
+    #toast.success { border-left: 4px solid var(--success); }
+    #toast.error   { border-left: 4px solid var(--danger);  }
+    .toast-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    #toast.success .toast-icon { background: var(--success-bg); color: var(--success); }
+    #toast.error   .toast-icon { background: var(--danger-bg);  color: var(--danger);  }
+
+    /* =====================================================
+       PIN LOCK SCREEN
+    ===================================================== */
+
+    #page-lock {
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      background: linear-gradient(145deg, #FFF6EF 0%, #FDE8D8 50%, #FDDCC8 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    #page-lock.hidden { display: none; }
+
+    .lock-icon-ring {
+      width: 72px; height: 72px;
+      background: linear-gradient(135deg, var(--peach), var(--peach2));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 28px rgba(246,165,122,0.45);
+      margin-bottom: 20px;
+    }
+    .lock-icon-ring svg { width: 32px; height: 32px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    .lock-title { font-size: 1.6rem; font-weight: 700; color: var(--text); margin-bottom: 6px; letter-spacing: -0.02em; }
+    .lock-subtitle { font-size: 0.875rem; color: var(--text2); margin-bottom: 36px; text-align: center; }
+
+    .pin-dots { display: flex; gap: 14px; margin-bottom: 12px; }
+    .pin-dot {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #e8d5c8; transition: all 0.18s ease;
+    }
+    .pin-dot.filled {
+      background: linear-gradient(135deg, var(--peach), var(--peach2));
+      transform: scale(1.15);
+      box-shadow: 0 3px 10px rgba(246,165,122,0.5);
+    }
+    .pin-dot.error { background: var(--danger); box-shadow: 0 3px 10px rgba(224,112,112,0.4); }
+
+    .lock-error-msg {
+      height: 22px; font-size: 0.8rem; color: var(--danger); font-weight: 500;
+      margin-bottom: 20px; text-align: center; opacity: 0; transition: opacity 0.2s;
+    }
+    .lock-error-msg.visible { opacity: 1; }
+
+    .pin-keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      width: 100%;
+      max-width: 280px;
+    }
+
+    .pin-key {
+      background: #fff;
+      border: none; border-radius: 18px;
+      height: 70px;
+      font-family: "Poppins", sans-serif; font-size: 1.35rem; font-weight: 600;
+      color: var(--text); cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      line-height: 1; user-select: none; -webkit-tap-highlight-color: transparent;
+    }
+    .pin-key-sub { font-size: 0.55rem; font-weight: 500; letter-spacing: 0.12em; color: var(--text3); text-transform: uppercase; margin-top: 3px; }
+    .pin-key:hover  { background: var(--peach-light); transform: translateY(-2px); box-shadow: 0 8px 22px rgba(246,165,122,0.2); }
+    .pin-key:active { transform: scale(0.94); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+    .pin-key.key-del { background: var(--bg2); font-size: 1rem; }
+    .pin-key.key-del svg { width: 22px; height: 22px; stroke: var(--text2); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .pin-key.key-del:hover { background: #fde8d8; }
+    .pin-key.key-del:hover svg { stroke: var(--danger); }
+
+    .pin-key.key-enter {
+      background: linear-gradient(135deg, var(--peach), var(--peach2));
+      color: #fff; font-size: 0.8rem;
+      box-shadow: 0 4px 16px rgba(246,165,122,0.35);
+    }
+    .pin-key.key-enter:hover { filter: brightness(1.06); transform: translateY(-2px); }
+
+    @keyframes pinShake {
+      0%,100% { transform: translateX(0); }
+      15%  { transform: translateX(-10px); }
+      30%  { transform: translateX(10px); }
+      45%  { transform: translateX(-8px); }
+      60%  { transform: translateX(8px); }
+      75%  { transform: translateX(-4px); }
+      90%  { transform: translateX(4px); }
+    }
+    .pin-dots.shake { animation: pinShake 0.5s ease; }
+
+        /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+    @media (max-width: 640px) {
+      .topnav { padding: 0 20px; height: 62px; }
+      .brand-name { display: none; }
+      .home-hero  { padding: 40px 20px 20px; }
+      .stats-bar  { padding: 0 20px 20px; }
+      .section    { padding: 0 20px 48px; }
+      .admin-container { padding: 32px 20px 60px; }
+      .form-card       { padding: 24px 20px; }
+      .modal { padding: 32px 24px; }
+      .modal-actions { flex-direction: column; }
+      #toast { left: 16px; right: 16px; bottom: 16px; }
+      .blob-tr { width: 320px; height: 320px; top: -100px; right: -100px; }
+      .blob-bl { width: 240px; height: 240px; }
+      .admin-item-actions { flex-direction: column; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+
+  <!-- =============================================
+       PIN LOCK SCREEN
+       Shown on first load; hidden after correct PIN.
+       Session is stored in sessionStorage so refresh
+       requires re-entering the PIN.
+  ============================================= -->
+  <div id="page-lock">
+
+    <!-- Animated blobs (inherit from body background) -->
+    <div class="lock-icon-ring">
+      <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    </div>
+
+    <div class="lock-title">Dashboard Hub</div>
+    <div class="lock-subtitle">Enter your passcode to continue</div>
+
+    <!-- PIN dot indicators (6 dots for 6-digit PIN) -->
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="dot-0"></div>
+      <div class="pin-dot" id="dot-1"></div>
+      <div class="pin-dot" id="dot-2"></div>
+      <div class="pin-dot" id="dot-3"></div>
+      <div class="pin-dot" id="dot-4"></div>
+      <div class="pin-dot" id="dot-5"></div>
+    </div>
+
+    <div class="lock-error-msg" id="lock-error">Incorrect passcode. Try again.</div>
+
+    <!-- Numeric Keypad -->
+    <div class="pin-keypad">
+
+      <button class="pin-key" onclick="pinKey('1')">1<span class="pin-key-sub"></span></button>
+      <button class="pin-key" onclick="pinKey('2')">2<span class="pin-key-sub">ABC</span></button>
+      <button class="pin-key" onclick="pinKey('3')">3<span class="pin-key-sub">DEF</span></button>
+
+      <button class="pin-key" onclick="pinKey('4')">4<span class="pin-key-sub">GHI</span></button>
+      <button class="pin-key" onclick="pinKey('5')">5<span class="pin-key-sub">JKL</span></button>
+      <button class="pin-key" onclick="pinKey('6')">6<span class="pin-key-sub">MNO</span></button>
+
+      <button class="pin-key" onclick="pinKey('7')">7<span class="pin-key-sub">PQRS</span></button>
+      <button class="pin-key" onclick="pinKey('8')">8<span class="pin-key-sub">TUV</span></button>
+      <button class="pin-key" onclick="pinKey('9')">9<span class="pin-key-sub">WXYZ</span></button>
+
+      <!-- Bottom row: empty spacer | 0 | delete -->
+      <div></div>
+      <button class="pin-key" onclick="pinKey('0')">0</button>
+      <button class="pin-key key-del" onclick="pinDelete()" aria-label="Delete">
+        <svg viewBox="0 0 24 24"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+      </button>
+
+    </div>
+
+  </div><!-- /page-lock -->
+
+  <!-- Organic blob backgrounds -->
+  <div class="blob-tr" aria-hidden="true"></div>
+  <div class="blob-bl" aria-hidden="true"></div>
+
+  <!-- =============================================
+       PAGE 1: HOME — Dashboard List
+  ============================================= -->
+  <div id="page-home" class="page active">
+
+    <nav class="topnav">
+      <a class="brand" href="#">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        </div>
+        <span class="brand-name">Dashboard Hub</span>
+      </a>
+      <div class="topnav-right">
+        <button class="btn btn-ghost btn-sm" onclick="showAdminLogin()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Admin
+        </button>
+      </div>
+    </nav>
+
+    <div class="home-hero">
+      <div class="hero-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Your Workspace
+      </div>
+      <h1>All your <span class="accent-word">dashboards</span>,<br>in one place.</h1>
+      <p>Click any card below to open a dashboard in full view.</p>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-pill">
+        <div class="stat-pill-icon">
+          <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        </div>
+        <div>
+          <div class="num" id="stat-count">0</div>
+          <div class="lbl">Dashboards</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-label">Available Dashboards</span>
+      </div>
+      <div id="empty-state" class="empty-state">
+        <div class="empty-icon-wrap">
+          <svg viewBox="0 0 24 24"><polyline points="21 15 21 19 3 19 3 15"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <h3>No Dashboards Yet</h3>
+        <p>An admin can add dashboards from the Admin panel.</p>
+      </div>
+      <div id="dashboard-grid"></div>
+    </div>
+
+  </div><!-- /page-home -->
+
+
+  <!-- =============================================
+       PAGE 2: DASHBOARD IFRAME VIEW (Power BI)
+
+       Structure for true full-size rendering:
+         page-view  (height:100vh, flex column)
+           └─ view-topnav  (fixed height, flex-shrink:0)
+           └─ iframe-wrapper  (flex:1, position:relative)
+                 └─ dashboard-iframe (position:absolute, 100%×100%)
+  ============================================= -->
+  <div id="page-view" class="page">
+
+    <div class="view-topnav">
+      <button class="btn btn-ghost btn-sm" onclick="goHome()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to List
+      </button>
+      <div class="view-divider"></div>
+      <span class="view-title" id="view-title">Dashboard</span>
+    </div>
+
+    <!-- wrapper grows to fill all remaining viewport height -->
+    <div class="iframe-wrapper">
+      <!--
+        Power BI requires:
+          allowFullScreen
+          frameborder="0"
+        These are set here AND the src/srcdoc is injected by JS.
+        The iframe itself fills 100%×100% of its absolutely-positioned wrapper.
+      -->
+      <iframe
+        id="dashboard-iframe"
+        src=""
+        title="Dashboard"
+        frameborder="0"
+        allowFullScreen="true"
+        allow="fullscreen"
+      ></iframe>
+    </div>
+
+  </div><!-- /page-view -->
+
+
+  <!-- =============================================
+       PAGE 3: ADMIN PANEL
+  ============================================= -->
+  <div id="page-admin" class="page">
+
+    <nav class="topnav">
+      <a class="brand" href="#">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        </div>
+        <span class="brand-name">Admin Panel</span>
+      </a>
+      <div class="topnav-right">
+        <button class="btn btn-ghost btn-sm" onclick="goHome()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Back to Home
+        </button>
+      </div>
+    </nav>
+
+    <div class="admin-container">
+
+      <div class="admin-header">
+        <h1>Admin Panel</h1>
+        <p>Create and manage dashboards — changes save instantly to local storage.</p>
+      </div>
+
+      <!-- CREATE / EDIT DASHBOARD FORM
+           When editing, this card gets class 'edit-mode' and the
+           save button label + behaviour changes via JS -->
+      <div class="form-card" id="form-card">
+        <div class="form-card-title" id="form-card-title">
+          Create New Dashboard
+          <span class="edit-mode-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Editing
+          </span>
+        </div>
+
+        <!-- Hidden field holds the ID of the dashboard being edited (0 = new) -->
+        <input type="hidden" id="edit-id" value="0" />
+
+        <div class="form-group">
+          <label for="new-name">Dashboard Name</label>
+          <input type="text" id="new-name" placeholder="e.g. Sales Overview" />
+        </div>
+
+        <div class="form-group">
+          <label for="new-url">iFrame URL</label>
+          <input type="url" id="new-url" placeholder="https://app.powerbi.com/reportEmbed?..." />
+          <div class="form-hint">Enter a direct URL to embed, <em>or</em> paste the full iframe HTML code below.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="new-code">— or — Full iFrame Embed Code</label>
+          <textarea id="new-code" placeholder='<iframe src="https://app.powerbi.com/..." frameborder="0" allowFullScreen="true"></iframe>'></textarea>
+          <div class="form-hint">Paste the full embed code from Power BI / Looker / Tableau here. If provided, the URL field above is ignored.</div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" id="save-btn" onclick="saveDashboardForm()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="save-btn-icon"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span id="save-btn-label">Save Dashboard</span>
+          </button>
+          <button class="btn btn-ghost" onclick="cancelEdit()">Cancel / Clear</button>
+        </div>
+      </div><!-- /form-card -->
+
+      <!-- EXISTING DASHBOARDS LIST -->
+      <div class="form-card">
+        <div class="form-card-title">Existing Dashboards</div>
+        <div id="admin-list" class="admin-list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /page-admin -->
+
+
+  <!-- =============================================
+       PASSWORD MODAL
+  ============================================= -->
+  <div id="modal-overlay" class="modal-overlay" style="display:none;">
+    <div class="modal">
+      <div class="modal-icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <h2>Admin Access</h2>
+      <p>Enter the admin password to continue.</p>
+      <div class="form-group">
+        <label for="admin-password">Password</label>
+        <input type="password" id="admin-password" placeholder="••••••••••"
+               onkeydown="if(event.key==='Enter') checkPassword()" />
+      </div>
+      <div class="modal-error" id="pw-error">Incorrect password. Please try again.</div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="checkPassword()">Unlock</button>
+        <button class="btn btn-ghost"   onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast">
+    <div class="toast-icon"></div>
+    <span id="toast-msg"></span>
+  </div>
+
+
+  <!-- =============================================
+       JAVASCRIPT
+  ============================================= -->
+  <script>
+    /* ===========================
+       CONSTANTS
+    =========================== */
+    const ADMIN_PASSWORD = '10102022';
+    const STORAGE_KEY    = 'dashboardhub_v1';
+
+    /* ===========================
+       DATA LAYER
+    =========================== */
+    function loadDashboards() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) { return []; }
+    }
+
+    function saveDashboards(dashboards) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dashboards));
+    }
+
+    function addDashboard(name, src, isCode) {
+      const dashboards = loadDashboards();
+      dashboards.push({
+        id:      Date.now(),
+        name:    name.trim(),
+        src:     src.trim(),
+        isCode:  isCode,
+        created: new Date().toLocaleDateString()
+      });
+      saveDashboards(dashboards);
+    }
+
+    /** UPDATE an existing dashboard by ID */
+    function updateDashboard(id, name, src, isCode) {
+      const dashboards = loadDashboards();
+      const idx = dashboards.findIndex(d => d.id === id);
+      if (idx === -1) return;
+      dashboards[idx].name   = name.trim();
+      dashboards[idx].src    = src.trim();
+      dashboards[idx].isCode = isCode;
+      // preserve original created date; add an updatedDate
+      dashboards[idx].updated = new Date().toLocaleDateString();
+      saveDashboards(dashboards);
+    }
+
+    function deleteDashboard(id) {
+      const dashboards = loadDashboards().filter(d => d.id !== id);
+      saveDashboards(dashboards);
+    }
+
+    /* ===========================
+       PAGE ROUTING
+    =========================== */
+    function showPage(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const target = document.getElementById(pageId);
+      if (target) target.classList.add('active');
+    }
+
+    function goHome() {
+      // Stop any running embedded content — removeAttribute to fully clear
+      const iframe = document.getElementById('dashboard-iframe');
+      iframe.removeAttribute('src');
+      iframe.removeAttribute('srcdoc');
+      showPage('page-home');
+      renderDashboardGrid();
+    }
+
+    /* ===========================
+       HOME — RENDER GRID
+    =========================== */
+    function renderDashboardGrid() {
+      const dashboards = loadDashboards();
+      const grid       = document.getElementById('dashboard-grid');
+      const emptyState = document.getElementById('empty-state');
+      const statCount  = document.getElementById('stat-count');
+
+      statCount.textContent = dashboards.length;
+      grid.innerHTML = '';
+
+      if (dashboards.length === 0) {
+        emptyState.style.display = 'block';
+        return;
+      }
+      emptyState.style.display = 'none';
+
+      const icons = [
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+      ];
+
+      dashboards.forEach((d, i) => {
+        const card = document.createElement('div');
+        card.className = 'dashboard-card';
+        const metaText = d.updated ? `Updated ${d.updated}` : `Added ${d.created}`;
+        card.innerHTML = `
+          <div class="card-icon">${icons[i % icons.length]}</div>
+          <div class="card-name">${escapeHtml(d.name)}</div>
+          <div class="card-meta">${metaText}</div>
+          <div class="card-footer">
+            <button class="btn btn-primary btn-sm" onclick="openDashboard(${d.id})">
+              Open Dashboard
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        `;
+        card.style.animationDelay = `${i * 0.06}s`;
+        grid.appendChild(card);
+      });
+    }
+
+    /* ===========================
+       DASHBOARD VIEW — Power BI full-size
+    =========================== */
+    function openDashboard(id) {
+      const dashboards = loadDashboards();
+      const d = dashboards.find(d => d.id === id);
+      if (!d) return;
+
+      document.getElementById('view-title').textContent = d.name;
+
+      const iframe = document.getElementById('dashboard-iframe');
+
+      // CRITICAL FIX: removeAttribute is required — setting srcdoc='' 
+      // renders an empty page and overrides src. Must fully remove the attribute.
+      iframe.removeAttribute('srcdoc');
+      iframe.removeAttribute('src');
+
+      // Determine final URL
+      let finalUrl = '';
+      if (d.isCode) {
+        const srcMatch = d.src.match(/src\s*=\s*["']([^"']+)["']/i);
+        if (srcMatch && srcMatch[1]) finalUrl = srcMatch[1];
+      } else {
+        finalUrl = d.src;
+      }
+
+      // Switch to view page FIRST, then load the URL
+      // This ensures the iframe is visible in the DOM before loading starts
+      showPage('page-view');
+
+      // Small delay lets the page render before the iframe starts loading
+      // Especially important for Power BI
+      setTimeout(function() {
+        if (finalUrl) iframe.src = finalUrl;
+      }, 60);
+    }
+
+    /* ===========================
+       ADMIN PASSWORD MODAL
+    =========================== */
+    function showAdminLogin() {
+      document.getElementById('admin-password').value = '';
+      document.getElementById('pw-error').style.display = 'none';
+      document.getElementById('modal-overlay').style.display = 'flex';
+      setTimeout(() => document.getElementById('admin-password').focus(), 100);
+    }
+
+    function closeModal() {
+      document.getElementById('modal-overlay').style.display = 'none';
+    }
+
+    function checkPassword() {
+      const val = document.getElementById('admin-password').value;
+      if (val === ADMIN_PASSWORD) {
+        closeModal();
+        cancelEdit();          // reset form to create mode
+        showPage('page-admin');
+        renderAdminList();
+      } else {
+        document.getElementById('pw-error').style.display = 'block';
+        document.getElementById('admin-password').value = '';
+        document.getElementById('admin-password').focus();
+      }
+    }
+
+    /* ===========================
+       ADMIN LIST
+    =========================== */
+    function renderAdminList() {
+      const dashboards = loadDashboards();
+      const list = document.getElementById('admin-list');
+      list.innerHTML = '';
+
+      if (dashboards.length === 0) {
+        list.innerHTML = '<p style="color:var(--text3);font-size:0.875rem;">No dashboards created yet.</p>';
+        return;
+      }
+
+      dashboards.forEach(d => {
+        const item = document.createElement('div');
+        item.className = 'admin-item';
+        const preview = d.isCode ? '[Embed Code]' : d.src;
+        item.innerHTML = `
+          <div class="admin-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          </div>
+          <div class="admin-item-info">
+            <div class="admin-item-name">${escapeHtml(d.name)}</div>
+            <div class="admin-item-url">${escapeHtml(preview)}</div>
+          </div>
+          <div class="admin-item-actions">
+            <button class="btn btn-edit btn-sm" onclick="beginEditDashboard(${d.id})">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Edit
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="handleDelete(${d.id})">Delete</button>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    /* ===========================
+       EDIT FUNCTIONALITY
+    =========================== */
+
+    /**
+     * Enter edit mode: populate the Create form with the
+     * existing dashboard data and change the save button label.
+     */
+    function beginEditDashboard(id) {
+      const dashboards = loadDashboards();
+      const d = dashboards.find(d => d.id === id);
+      if (!d) return;
+
+      // Populate form fields
+      document.getElementById('edit-id').value   = id;
+      document.getElementById('new-name').value  = d.name;
+
+      if (d.isCode) {
+        document.getElementById('new-url').value  = '';
+        document.getElementById('new-code').value = d.src;
+      } else {
+        document.getElementById('new-url').value  = d.src;
+        document.getElementById('new-code').value = '';
+      }
+
+      // Visual: switch card to edit-mode style
+      document.getElementById('form-card').classList.add('edit-mode');
+      document.getElementById('form-card-title').childNodes[0].textContent = 'Edit Dashboard ';
+
+      // Change save button to "Update"
+      document.getElementById('save-btn-label').textContent = 'Update Dashboard';
+      const icon = document.getElementById('save-btn-icon');
+      icon.innerHTML = '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>';
+
+      // Scroll the form into view so the user can see it
+      document.getElementById('form-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    /** Cancel edit mode and reset form to create-new state */
+    function cancelEdit() {
+      document.getElementById('edit-id').value   = '0';
+      document.getElementById('new-name').value  = '';
+      document.getElementById('new-url').value   = '';
+      document.getElementById('new-code').value  = '';
+
+      document.getElementById('form-card').classList.remove('edit-mode');
+      document.getElementById('form-card-title').childNodes[0].textContent = 'Create New Dashboard ';
+
+      document.getElementById('save-btn-label').textContent = 'Save Dashboard';
+      const icon = document.getElementById('save-btn-icon');
+      icon.innerHTML = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>';
+    }
+
+    /**
+     * Unified save handler — called by "Save/Update Dashboard" button.
+     * Decides whether to create a new dashboard or update an existing one
+     * based on the hidden edit-id field (0 = new, non-zero = edit).
+     */
+    function saveDashboardForm() {
+      const editId = parseInt(document.getElementById('edit-id').value, 10);
+      const isEditing = editId !== 0;
+
+      const name = document.getElementById('new-name').value.trim();
+      const url  = document.getElementById('new-url').value.trim();
+      const code = document.getElementById('new-code').value.trim();
+
+      // Validation
+      if (!name) {
+        showToast('Please enter a dashboard name.', 'error');
+        document.getElementById('new-name').focus();
+        return;
+      }
+      if (!url && !code) {
+        showToast('Please enter an iframe URL or embed code.', 'error');
+        return;
+      }
+
+      let finalSrc, finalIsCode;
+
+      if (code) {
+        if (!code.toLowerCase().includes('<iframe')) {
+          showToast('Embed code must contain an <iframe> tag.', 'error');
+          return;
+        }
+        finalSrc    = code;
+        finalIsCode = true;
+      } else {
+        try { new URL(url); } catch(e) {
+          showToast('Please enter a valid URL (include https://).', 'error');
+          return;
+        }
+        finalSrc    = url;
+        finalIsCode = false;
+      }
+
+      if (isEditing) {
+        updateDashboard(editId, name, finalSrc, finalIsCode);
+        showToast(`"${name}" updated successfully!`, 'success');
+      } else {
+        addDashboard(name, finalSrc, finalIsCode);
+        showToast(`Dashboard "${name}" created!`, 'success');
+      }
+
+      cancelEdit();        // reset form
+      renderAdminList();   // refresh list
+    }
+
+    /* Keep old createDashboard name working (not used, but for safety) */
+    function createDashboard() { saveDashboardForm(); }
+
+    function clearForm() { cancelEdit(); }
+
+    /* ===========================
+       DELETE
+    =========================== */
+    function handleDelete(id) {
+      const dashboards = loadDashboards();
+      const d = dashboards.find(d => d.id === id);
+      if (!d) return;
+      if (!confirm(`Delete "${d.name}"? This cannot be undone.`)) return;
+
+      // If we were editing this item, cancel edit mode
+      const editId = parseInt(document.getElementById('edit-id').value, 10);
+      if (editId === id) cancelEdit();
+
+      deleteDashboard(id);
+      renderAdminList();
+      showToast('Dashboard deleted.', 'success');
+    }
+
+    /* ===========================
+       TOAST
+    =========================== */
+    let toastTimer = null;
+    function showToast(message, type = 'success') {
+      const toast  = document.getElementById('toast');
+      const msgEl  = document.getElementById('toast-msg');
+      const iconEl = toast.querySelector('.toast-icon');
+      msgEl.textContent  = message;
+      iconEl.textContent = type === 'success' ? '✓' : '✕';
+      toast.className    = `show ${type}`;
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    /* ===========================
+       UTILITY
+    =========================== */
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.appendChild(document.createTextNode(String(str)));
+      return div.innerHTML;
+    }
+
+    /* ===========================
+       PIN LOCK
+       Passcode: 202600
+       Session stored in sessionStorage — re-enter on each browser session.
+    =========================== */
+    const APP_PASSCODE = '202600';
+
+    /** Called on every digit key press */
+    function pinKey(digit) {
+      const entry = (sessionStorage.getItem('pinEntry') || '');
+      if (entry.length >= 6) return; // max 6 digits
+      const next = entry + digit;
+      sessionStorage.setItem('pinEntry', next);
+      updatePinDots(next);
+
+      // Auto-submit when all 6 digits entered
+      if (next.length === 6) {
+        setTimeout(checkPin, 180); // tiny delay so last dot animates
+      }
+    }
+
+    /** Delete last digit */
+    function pinDelete() {
+      const entry = (sessionStorage.getItem('pinEntry') || '');
+      const next = entry.slice(0, -1);
+      sessionStorage.setItem('pinEntry', next);
+      updatePinDots(next);
+      hidePinError();
+    }
+
+    /** Update dot indicators to match current entry length */
+    function updatePinDots(entry) {
+      for (let i = 0; i < 6; i++) {
+        const dot = document.getElementById('dot-' + i);
+        dot.classList.toggle('filled', i < entry.length);
+        dot.classList.remove('error');
+      }
+    }
+
+    /** Check entered PIN against the passcode */
+    function checkPin() {
+      const entry = (sessionStorage.getItem('pinEntry') || '');
+      if (entry === APP_PASSCODE) {
+        // Correct — mark session as unlocked and hide lock screen
+        sessionStorage.setItem('appUnlocked', '1');
+        sessionStorage.removeItem('pinEntry');
+        document.getElementById('page-lock').classList.add('hidden');
+      } else {
+        // Wrong — shake dots, show error, clear entry
+        showPinError();
+      }
+    }
+
+    /** Show shake animation + error message */
+    function showPinError() {
+      const dots = document.getElementById('pin-dots');
+      // Mark all dots red
+      for (let i = 0; i < 6; i++) {
+        const dot = document.getElementById('dot-' + i);
+        dot.classList.remove('filled');
+        dot.classList.add('error');
+      }
+      // Shake animation
+      dots.classList.remove('shake');
+      void dots.offsetWidth; // reflow to restart animation
+      dots.classList.add('shake');
+
+      // Show error message
+      document.getElementById('lock-error').classList.add('visible');
+
+      // Clear after animation
+      setTimeout(() => {
+        sessionStorage.removeItem('pinEntry');
+        updatePinDots('');
+        dots.classList.remove('shake');
+      }, 600);
+    }
+
+    function hidePinError() {
+      document.getElementById('lock-error').classList.remove('visible');
+    }
+
+    /** Support physical keyboard input on the lock screen */
+    document.addEventListener('keydown', function(e) {
+      // Only act if lock screen is visible
+      if (document.getElementById('page-lock').classList.contains('hidden')) return;
+      if (e.key >= '0' && e.key <= '9') { pinKey(e.key); hidePinError(); }
+      if (e.key === 'Backspace') pinDelete();
+      if (e.key === 'Enter') checkPin();
+    });
+
+        /* ===========================
+       SEED DATA
+       Pre-loads the Sales Dashboard on very first launch only.
+       Uses a separate 'seeded' flag in localStorage so that
+       admin deletes are never overwritten on page refresh.
+    =========================== */
+    const SEEDED_KEY = 'dashboardhub_seeded';
+
+    function seedDefaultDashboards() {
+      // Only seed once — if the flag exists, user has already seen the app
+      // before, so respect whatever is (or isn't) in localStorage now.
+      if (localStorage.getItem(SEEDED_KEY)) return;
+
+      const defaults = [
+        {
+          id:      1000000001,
+          name:    'Sales Dashboard',
+          src:     'https://app.powerbi.com/view?r=eyJrIjoiYTZhY2Y4MzktMWE4Yy00OGQ4LTk0NTYtZjZjNDkxYTY4MDRlIiwidCI6ImJlYjkzYmFmLTllOGItNGRlOC1hYzdkLTg3Yjg3OGRlM2UyZCJ9',
+          isCode:  false,
+          created: new Date().toLocaleDateString()
+        }
+      ];
+
+      saveDashboards(defaults);
+
+      // Mark as seeded — this flag persists even if all dashboards are deleted
+      localStorage.setItem(SEEDED_KEY, '1');
+    }
+
+    /* ===========================
+       INIT
+    =========================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      seedDefaultDashboards(); // inject Sales Dashboard on first run
+      renderDashboardGrid();
+
+      // If already unlocked this session, hide the lock screen immediately
+      if (sessionStorage.getItem('appUnlocked') === '1') {
+        document.getElementById('page-lock').classList.add('hidden');
+      }
+      // Otherwise the lock screen stays visible (default)
+    });
+
+    document.getElementById('modal-overlay').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+  </script>
+</body>
+</html>
