@@ -1358,7 +1358,7 @@
        Uses a separate 'seeded' flag in localStorage so that
        admin deletes are never overwritten on page refresh.
     =========================== */
-    const SEEDED_KEY = 'dashboardhub_seeded';
+    const SEEDED_KEY = 'dashboardhub_seeded_v2';
 
     function seedDefaultDashboards() {
       // Only seed once — if the flag exists, user has already seen the app
@@ -1368,8 +1368,8 @@
       const defaults = [
         {
           id:      1000000001,
-          name:    'Sales Dashboard',
-          src:     'https://app.powerbi.com/view?r=eyJrIjoiYTZhY2Y4MzktMWE4Yy00OGQ4LTk0NTYtZjZjNDkxYTY4MDRlIiwidCI6ImJlYjkzYmFmLTllOGItNGRlOC1hYzdkLTg3Yjg3OGRlM2UyZCJ9',
+          name:    'Patients 02-2026',
+          src:     'https://app.powerbi.com/view?r=eyJrIjoiN2JiZGFiMGItZDRiYS00ZTdmLTlmMTMtMGE0ODU3Y2ExNmJlIiwidCI6ImJlYjkzYmFmLTllOGItNGRlOC1hYzdkLTg3Yjg3OGRlM2UyZCJ9',
           isCode:  false,
           created: new Date().toLocaleDateString()
         }
